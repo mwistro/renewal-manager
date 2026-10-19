@@ -1,0 +1,26 @@
+From: Renovaciones <renovaciones@supplier.example.com>
+To: comercial@example.com
+Subject: Renovacion de licencia Office 365
+Message-ID: <renovacion-ficticia-001@example.com>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+<!doctype html><html lang="es-ES"><body>
+<h1>Renovación de licencia Office 365</h1>
+<table><tr><td>
+<table><tr><th>Título</th><th>Ud.</th><th>PVD (act. → renov.)</th><th>PVP (act. → renov.)</th></tr>
+<tr><td>Microsoft Entra ID P1 (Anual/Anual)<br><small>Renovación automática</small></td><td>3</td><td>163,98 € → <strong>178,59 €</strong></td><td>201,60 € → <strong>219,60 €</strong></td></tr></table>
+</td></tr></table>
+<p>Fecha de expiración: 09-11-2026</p>
+<h2>Datos de la licencia</h2>
+<div>Dominio: Ejemplo</div><div>EmailCredenciales: privado@example.com</div>
+<div>FechaCotermino: 2026-11-09</div><div>SubscriptionId: identificador-interno-no-publicar</div>
+<h2>Datos del cliente</h2>
+<div><strong>Nombre cliente:</strong> Empresa de ejemplo, S. L.</div>
+<div>Persona de contacto: María García</div>
+<div>Email: cliente@example.com</div>
+<p>Es el momento de confirmar la renovación.</p>
+<p>Contacto del proveedor: agente@supplier.example.com</p>
+<a href="https://portal.supplier.example.com/contrato/ejemplo">Ver pedido</a>
+</body></html>

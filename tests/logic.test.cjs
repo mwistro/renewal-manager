@@ -1,0 +1,11 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {calculate,email}=require('../dist/logic.js');
+const base={price:'219.60',quantity:'3',basis:'unit',discount:'10',discountType:'percent'};
+test('precio por licencia, descuento porcentual y céntimos',()=>assert.deepEqual(calculate(base),{subtotal:65880,reduction:6588,total:59292}));
+test('precio del conjunto no se multiplica',()=>assert.deepEqual(calculate({...base,basis:'total'}),{subtotal:21960,reduction:2196,total:19764}));
+test('descuento fijo se aplica al total',()=>assert.equal(calculate({...base,discountType:'amount',discount:'50'}).total,60880));
+test('descuentos y cantidades inválidas se rechazan',()=>{for(const patch of [{discount:'101'},{discount:'-1'},{quantity:'1.5'},{quantity:'0'},{price:''},{basis:''},{discountType:'amount',discount:'1000'}])assert.throws(()=>calculate({...base,...patch}));});
+test('redondeo monetario y descuento completo',()=>{assert.equal(calculate({...base,price:'0.10',discount:'0'}).total,30);assert.equal(calculate({...base,discount:'100'}).total,0);});
+test('el correo no expone coste ni campos internos del proveedor',()=>{const html=email({...base,cost:'178.59',supplier:'Proveedor de ejemplo',subscriptionId:'SECRETO',supplierUrl:'https://portal.supplier.example.com',company:'Mi empresa'});for(const secret of ['178.59','178,59','Proveedor de ejemplo','SECRETO','supplier.example.com'])assert.equal(html.includes(secret),false);});
+test('escapa el contenido introducido y conserva caracteres españoles',()=>{const html=email({...base,company:'<script>alert(1)</script>',contact:'María',message:'Primera línea\nSegunda línea'});assert.equal(html.includes('<script>'),false);assert.ok(html.includes('&lt;script&gt;'));assert.ok(html.includes('María'));assert.ok(html.includes('Primera línea<br>Segunda línea'));});

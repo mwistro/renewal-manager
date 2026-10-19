@@ -1,0 +1,27 @@
+{
+  "name": "renewal-manager",
+  "productName": "Renewal Manager",
+  "description": "License renewal review, pricing and email proposals — portfolio edition",
+  "author": "Mateus Maistro",
+  "private": true,
+  "version": "1.0.0",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "demo": "python -m http.server 8080 --bind 127.0.0.1 --directory dist",
+    "test": "node --test tests/*.test.cjs",
+    "test:automation": "python -m unittest discover -s tests -p test_*.py",
+    "test:ui": "node scripts/test-login.cjs && node scripts/test-demo.cjs",
+    "showcase": "node scripts/capture-showcase.cjs",
+    "audit": "python scripts/audit-public.py",
+    "automation": "python -m automation iniciar",
+    "desktop": "python scripts/prepare_desktop.py && electron ."
+  },
+  "devDependencies": {
+    "electron": "44.7.0",
+    "electron-builder": "26.17.0",
+    "playwright": "1.63.0"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.10"
+  }
+}

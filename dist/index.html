@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es-ES">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Renewal Manager · Demo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar"><a class="brand" href="./"><span class="brand-icon">↻</span> Renewal Manager<span class="brand-divider">/</span><span class="brand-sub">Espacio comercial</span></a><span class="local-badge"><i></i> Demo de portafolio</span></header>
+<main>
+  <div class="page-heading"><div><p class="eyebrow">DE LA RENOVACIÓN A LA PROPUESTA</p><h1>Tu precio. Tu marca.</h1><p class="subtitle">Convierte los datos del proveedor en un correo listo para tu cliente.</p></div><button id="sample" class="button secondary">Cargar ejemplo ficticio</button></div>
+  <div class="workspace">
+    <section class="editor" aria-label="Preparar propuesta">
+      <form id="proposal-form">
+      <section class="card"><div class="section-heading"><span class="step">01</span><div><h2>Datos de la renovación</h2><p>Introduce los datos del correo recibido.</p></div></div>
+        <div class="notice">Demostración local con datos ficticios. Prepara una propuesta, ajusta el descuento y descarga el borrador. No requiere cuenta ni conexión a Outlook.</div>
+        <div class="fields"><label class="wide">Producto o licencia<input id="product" required maxlength="180" placeholder="Microsoft Entra ID P1"></label>
+        <label class="wide">Modalidad<input id="term" maxlength="100" placeholder="Anual, pago anual"></label>
+        <label>Licencias<input id="quantity" type="number" min="1" max="100000" step="1" value="1" required></label><label>Fecha de renovación<input id="renewal" type="date" required></label>
+        <label class="wide">Empresa cliente<input id="customer" required maxlength="160" placeholder="Nombre de la empresa"></label><label>Persona de contacto<input id="contact" maxlength="120" placeholder="Nombre"></label><label>Email del cliente<input id="recipient" type="email" maxlength="200" placeholder="cliente@example.com" required></label></div>
+      </section>
+      <section class="card"><div class="section-heading"><span class="step">02</span><div><h2>Precio y descuento</h2><p>El cliente verá únicamente tu propuesta comercial.</p></div></div>
+        <div class="fields"><label>Precio de venta (€)<input id="price" type="number" min="0" max="10000000" step="0.01" required placeholder="219,60"></label><label>Este precio corresponde a<select id="basis" required><option value="">Selecciona una opción</option><option value="unit">Una licencia</option><option value="total">Todas las licencias</option></select></label>
+        <label>Descuento<input id="discount" type="number" min="0" step="0.01" value="0" required></label><label>Tipo de descuento<select id="discount-type"><option value="percent">Porcentaje (%)</option><option value="amount">Importe total (€)</option></select></label>
+        <label class="wide">Tratamiento de impuestos<select id="tax"><option value="excluded">IVA no incluido</option><option value="included">IVA incluido</option><option value="unspecified">No indicar impuestos</option></select></label>
+        <label class="wide">Coste del proveedor (€) <span class="optional">Opcional · Solo visible aquí</span><input id="cost" type="number" min="0" max="10000000" step="0.01" placeholder="178,59"><small>Con la misma base que el precio de venta: por licencia o por conjunto.</small></label></div>
+        <div class="totals"><div><span>Importe antes del descuento</span><strong id="subtotal">—</strong></div><div><span>Descuento aplicado</span><strong id="discount-total">—</strong></div><div class="grand-total"><span>Total para el cliente</span><strong id="total">—</strong></div><div id="profit-row" hidden><span>Beneficio bruto estimado · interno</span><strong id="profit">—</strong></div></div><p id="price-error" class="error" role="alert"></p>
+      </section>
+      <section class="card"><div class="section-heading"><span class="step">03</span><div><h2>Identidad y mensaje</h2><p>Personaliza el remitente y el contenido.</p></div></div>
+        <div class="fields"><label>Tu empresa<input id="company" required maxlength="140" placeholder="Nombre de tu empresa"></label><label>Email de contacto<input id="sender" type="email" required maxlength="200" placeholder="comercial@example.com"></label>
+        <label class="wide upload">Logotipo de la empresa<input id="logo" type="file" accept="image/png,image/jpeg"><small>PNG o JPG · Hasta 1 MB · Se incluye en el archivo de correo.</small></label><button type="button" class="text-button" id="remove-logo" hidden>Quitar logotipo</button>
+        <label class="wide">Asunto<input id="subject" required maxlength="200" value="Propuesta de renovación de licencias"></label><label class="wide">Mensaje<textarea id="message" rows="4" maxlength="4000">Te enviamos nuestra propuesta para la próxima renovación de tus licencias. A continuación encontrarás el detalle y el importe final.</textarea></label><label class="wide">Cierre<textarea id="closing" rows="3" maxlength="2000">Si deseas modificar el número de licencias o tienes alguna consulta, responde a este correo y te ayudaremos.</textarea></label></div>
+      </section>
+      </form>
+    </section>
+    <aside class="preview-column"><div class="preview-sticky"><div class="preview-heading"><h2>Vista previa del correo</h2><span class="pill">CLIENTE</span></div><div class="mail-window"><div class="mail-meta"><div><span>Para</span><b id="preview-to">Email del cliente</b></div><div><span>Asunto</span><b id="preview-subject">Propuesta de renovación de licencias</b></div></div><iframe id="preview" title="Vista previa del email para el cliente" sandbox=""></iframe></div><div class="actions"><button id="download" class="button primary">Descargar correo (.eml) <span>↗</span></button><button id="copy" class="button secondary">Copiar correo con formato</button></div><p class="preview-help">Revisa el contenido antes de enviarlo. El archivo .eml incluye el logotipo y puede abrirse en un cliente de correo compatible. No se envía ningún mensaje desde esta aplicación.</p><p id="status" role="status" aria-live="polite"></p></div></aside>
+  </div>
+  <footer>Renewal Manager <span>Los datos introducidos se mantienen solo durante esta sesión de la página.</span></footer>
+</main>
+<script src="logic.js"></script><script src="app.js"></script>
+</body></html>

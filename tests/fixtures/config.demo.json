@@ -1,0 +1,10 @@
+{
+  "tenant_id": "organizations",
+  "client_id": "",
+  "expected_mailbox": "",
+  "supplier_domains": ["supplier.example.com", "mail.supplier.example.com"],
+  "price_basis": "total",
+  "tax": "unspecified",
+  "poll_seconds": 30,
+  "company": {"name": "Empresa de demostración", "email": "comercial@example.com", "logo_path": null}
+}

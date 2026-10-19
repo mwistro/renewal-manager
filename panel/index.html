@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es-ES">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Renovaciones · Renewal Manager</title><link rel="stylesheet" href="/styles.css"></head>
+<body>
+<section id="login-screen" class="login-screen" aria-labelledby="login-title">
+<div class="login-card">
+<div class="login-brand"><span class="brand-symbol" aria-hidden="true">↻</span><strong>Renewal<span> Manager</span></strong></div>
+<p class="eyebrow">RENOVACIONES</p><h1 id="login-title">Accede con Outlook</h1>
+<p id="login-description">Comprobando tu sesión guardada…</p>
+<p id="login-account" class="login-account"></p>
+<button id="login-connect" class="button primary" disabled>Iniciar sesión con Microsoft</button>
+<div id="auth-box" class="auth-box" hidden><div><h2>Continúa en Microsoft</h2><p id="auth-description">Preparando el inicio de sesión…</p></div><div id="auth-code-area" hidden><strong id="auth-code"></strong><a id="auth-link" class="button primary" target="_blank" rel="noreferrer">Abrir Microsoft ↗</a></div></div>
+<p id="login-error" class="banner error-banner" role="alert" hidden></p>
+<p class="login-note">Tu sesión se guarda protegida en este equipo. Los correos solo se envían después de revisar la vista previa y confirmar.</p>
+</div></section>
+<div id="application" hidden>
+<aside class="sidebar"><a href="/" class="brand"><span class="brand-symbol" aria-hidden="true">↻</span><strong>Renewal<span> Manager</span></strong></a><p class="sidebar-label">ESPACIO COMERCIAL</p><nav aria-label="Filtrar renovaciones"><button class="nav active" data-filter="pending"><span>◷</span>Pendientes<b id="pending-count">0</b></button><button class="nav" data-filter="review"><span>◇</span>Revisar datos<b id="review-count">0</b></button><button class="nav" data-filter="sent"><span>↗</span>Envíos<b id="sent-count">0</b></button><button class="nav" data-filter="all"><span>☷</span>Todas</button></nav><div class="sidebar-bottom"><div class="account-mark">M</div><div><strong>Cuenta de Outlook</strong><p id="account">Sin conectar</p></div></div></aside>
+<main><header class="topbar"><div><span class="breadcrumb">Correo comercial</span><span class="slash">/</span><b>Renovaciones</b></div><div class="connection"><span id="connection-dot" class="dot"></span><span id="connection-label">Sin conexión</span><button class="button compact" id="connect">Conectar Outlook</button></div></header>
+<div class="content"><section class="page-title"><div><p class="eyebrow">CADA RENOVACIÓN, A TU MANERA</p><h1>Renovaciones</h1><p>Revisa los precios, prepara tu propuesta y decide cuándo enviarla.</p></div><div class="toolbar"><button class="button secondary" id="notify">Activar avisos</button><button class="button secondary" id="load-test">Cargar prueba local</button></div></section>
+<div id="connection-error" class="banner error-banner" role="status" hidden></div>
+<p id="app-version" class="muted" hidden></p>
+<div class="summary-strip"><div><span class="summary-number" id="summary-pending">0</span><span>Pendientes de preparar</span></div><div><span class="summary-number" id="summary-sent">0</span><span>Envíos registrados</span></div><p id="sync-label">Conecta Outlook para recibir las nuevas renovaciones.</p><button class="text-button" id="sync">Comprobar ahora ↻</button></div>
+<div class="workspace"><section class="inbox" aria-label="Lista de renovaciones"><div class="inbox-heading"><h2 id="list-title">Pendientes</h2><span id="list-count">0</span></div><label class="search-label"><span class="sr-only">Buscar cliente o licencia</span><input id="search" type="search" placeholder="Buscar cliente o licencia…"></label><div id="queue" class="queue"></div></section><section class="detail" id="detail" aria-label="Preparar propuesta"><div class="empty-detail"><span class="empty-icon">↗</span><h2>De la renovación al cliente.</h2><p>Selecciona un correo para ver sus precios, aplicar un descuento y preparar la propuesta.</p><ol><li>Recibe un aviso</li><li>Revisa y previsualiza</li><li>Confirma el envío</li></ol><p class="muted">Puedes cargar el correo de prueba para explorar el proceso.</p></div></section></div>
+<footer>La revisión y el envío están en tus manos.<span>La supervisión funciona mientras este proceso está abierto. Los avisos del navegador requieren mantener el panel abierto.</span></footer></div></main>
+</div>
+<dialog id="confirm-dialog"><form id="confirm-form"><div class="dialog-top"><span class="eyebrow">ÚLTIMA REVISIÓN</span><button type="button" class="close-button" id="cancel-x" aria-label="Cerrar">×</button></div><h2>¿Enviar esta propuesta?</h2><p>Se enviará desde <strong id="confirm-from"></strong> con el contenido de la vista previa.</p><dl><div><dt>Destinatario</dt><dd id="confirm-to"></dd></div><div><dt>Asunto</dt><dd id="confirm-subject"></dd></div><div><dt>Total de la propuesta</dt><dd id="confirm-total"></dd></div></dl><p id="confirm-test" class="notice" hidden>Esta es una prueba: el correo llegará a tu propia cuenta.</p><div class="dialog-actions"><button type="button" class="button secondary" id="cancel-send">Volver a revisar</button><button type="submit" class="button primary" id="confirm-send">Confirmar y enviar</button></div></form></dialog>
+<div id="toast" role="status" aria-live="polite" hidden></div><script src="/app.js"></script>
+</body></html>
