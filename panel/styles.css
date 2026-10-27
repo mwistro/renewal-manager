@@ -4,3 +4,4 @@
 
 /* Neutral portfolio identity. */
 :root{--accent:#247b83;--navy:#172e38}.brand-symbol{display:block;font-size:30px;color:#6bc9c5;line-height:1;margin-bottom:12px}.brand strong,.login-brand{letter-spacing:.5px}.button.primary{background:#247b83;border-color:#247b83}
+.preview-refresh-hint{position:relative;margin:12px 0 0;padding:12px 14px;border:1px solid #e5d5aa;border-radius:8px;background:#fff9eb;color:#71551d;font-size:12px;line-height:1.6}.preview-refresh-hint::before{content:"";position:absolute;top:-5px;left:24px;width:8px;height:8px;background:#fff9eb;border-top:1px solid #e5d5aa;border-left:1px solid #e5d5aa;transform:rotate(45deg)}

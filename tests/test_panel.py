@@ -122,6 +122,50 @@ class PanelTests(unittest.TestCase):
         self.assertEqual(new['amounts']['total'], 19960)
         self.confirm(key, new)
 
+    def test_cambio_destinatario_conserva_contenido_y_revoca_token_anterior(self):
+        key = self.pending()
+        old = self.preview(key)
+        record = copy.deepcopy(self.panel.previews[old['approval_id']])
+        with patch('automation.panel.draft_payload', side_effect=AssertionError('No regenerar el correo')):
+            new = self.panel.change_recipient(key, {'approval_id': old['approval_id'], 'recipient': 'nuevo@example.com'})
+        updated = self.panel.previews[new['approval_id']]
+        self.assertEqual(updated['expires'], record['expires'])
+        expected = copy.deepcopy(record['payload'])
+        expected['toRecipients'] = [{'emailAddress': {'address': 'nuevo@example.com'}}]
+        self.assertEqual(updated['payload'], expected)
+        self.assertEqual(self.panel.store.read()['items'][key]['recipient'], 'nuevo@example.com')
+        self.assertEqual(self.writes(), [])
+        with self.assertRaises(ValueError): self.confirm(key, old)
+        self.confirm(key, new)
+        self.assertEqual(self.writes()[0][2], expected)
+        self.assertEqual(len(self.writes()), 2)
+
+    def test_cambio_destinatario_rechaza_pruebas_caducidad_y_direcciones_invalidas(self):
+        key = self.pending()
+        preview = self.preview(key)
+        for recipient in ('', 'incorrecto', 'a@example.com;b@example.com', 'x'*201+'@example.com'):
+            with self.subTest(recipient=recipient), self.assertRaises(ValueError):
+                self.panel.change_recipient(key, {'approval_id': preview['approval_id'], 'recipient': recipient})
+        self.panel.previews[preview['approval_id']]['expires'] = 0
+        with self.assertRaises(ValueError):
+            self.panel.change_recipient(key, {'approval_id': preview['approval_id'], 'recipient': 'otro@example.com'})
+        test_key = self.pending(test=True)
+        test_preview = self.preview(test_key)
+        with self.assertRaises(ValueError):
+            self.panel.change_recipient(test_key, {'approval_id': test_preview['approval_id'], 'recipient': 'otro@example.com'})
+        self.assertEqual(self.writes(), [])
+
+    def test_cambio_destinatario_no_reutiliza_preview_de_otro_item_o_envio_iniciado(self):
+        key = self.pending()
+        preview = self.preview(key)
+        other = self.panel.ingest({**self.message, 'id': 'otra-renovacion'})
+        with self.assertRaises(ValueError):
+            self.panel.change_recipient(other, {'approval_id': preview['approval_id'], 'recipient': 'otro@example.com'})
+        self.panel.state['items'][key]['status'] = 'creating'
+        with self.assertRaises(ValueError):
+            self.panel.change_recipient(key, {'approval_id': preview['approval_id'], 'recipient': 'otro@example.com'})
+        self.assertEqual(self.writes(), [])
+
     def test_confirmacion_caducada_no_envia(self):
         key = self.pending()
         result = self.preview(key)

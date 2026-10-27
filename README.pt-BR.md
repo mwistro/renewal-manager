@@ -25,6 +25,7 @@ O Renewal Manager organiza essas etapas em uma fila de revisão. A automação e
 | Receber | Identifica avisos dos remetentes configurados e evita duplicação. |
 | Revisar | Exibe custo interno, preço anterior, preço de renovação e dados do cliente. |
 | Preparar | Calcula o desconto e gera uma proposta sem expor o custo do fornecedor. |
+| Ajustar destinatário | Altera o endereço de uma proposta pendente preservando o conteúdo revisado. |
 | Confirmar | Mostra remetente, destinatário, assunto e total antes de permitir o envio. |
 
 ## Showcase
@@ -43,11 +44,25 @@ Prévia gerada pelo mesmo código Python usado na preparação das propostas. Ex
 
 ### 03 · Revisão antes do envio
 
-A confirmação final permite conferir os dados da operação. A prévia perde a validade quando os campos são alterados, exigindo uma nova revisão.
+A confirmação final permite conferir os dados da operação. Alterar o desconto invalida a prévia; alterar apenas o destinatário preserva o conteúdo revisado e exige uma nova confirmação com o endereço atualizado.
 
 <p align="center">
   <img src="docs/screenshots/04-confirmation.png" alt="Diálogo de confirmação com remetente e destinatário fictícios, assunto e total" width="560">
 </p>
+
+### 04 · Troque o destinatário sem refazer a proposta
+
+A versão **1.1.0** traz as melhorias mais recentes do fluxo de revisão para a edição de portfólio. Depois de revisar uma proposta, o usuário pode corrigir o destinatário e clicar em **Revisar y enviar**. A confirmação mostra o novo endereço, preservando o conteúdo do email e o valor revisado.
+
+<p align="center">
+  <img src="docs/screenshots/05-recipient-change.png" alt="Nova confirmação com destinatário atualizado e o mesmo total revisado de 1.620,00 euros" width="560">
+</p>
+
+Endereços inválidos bloqueiam o envio sem descartar a prévia. Ao mudar o desconto, um aviso visível pede para gerar a prévia novamente antes de enviar:
+
+![Alteração do desconto com aviso para regenerar a prévia](docs/screenshots/06-preview-refresh.png)
+
+O backend emite um novo token de aprovação quando o destinatário muda, revoga o anterior e mantém o prazo de validade original. Destinatários de teste continuam bloqueados. Uma alteração durante a confirmação fecha ou impede a abertura do diálogo, evitando aprovar um endereço desatualizado sem perceber.
 
 <details>
 <summary><strong>Ver a tela de acesso e a demonstração independente</strong></summary>
@@ -82,6 +97,7 @@ A demonstração não conecta ao Outlook, não envia mensagens e mantém os dado
 - Extração de dados de emails HTML, com revisão quando campos estão ausentes ou ambíguos. O parser suporta o formato exemplificado em `tests/fixtures`; não é um parser universal de fornecedores.
 - Separação entre custo interno e proposta apresentada ao cliente.
 - Integração opcional com Microsoft Graph para leitura, rascunhos e envio após revisão e confirmação.
+- Correções de destinatário preservam o email revisado; mudanças no desconto exigem outra prévia. A confirmação fica vinculada ao destinatário e à revisão atuais da proposta.
 - Histórico local, deduplicação, recuperação após interrupções e tratamento de envios com resultado incerto, sem repetição automática.
 - Sessão criptografada com Windows DPAPI, vinculada ao usuário local.
 - Aplicação Electron com isolamento de contexto, sandbox, chave efêmera entre processos, notificações e execução na bandeja.
@@ -122,7 +138,7 @@ O editor em `dist/` é uma demonstração independente: funciona no navegador, c
 - **Envios incertos:** uma operação sem confirmação de resultado não é repetida automaticamente.
 - **Separação de dados:** custo e campos internos do aviso não entram na proposta enviada ao cliente.
 - **Fronteira entre processos:** o Electron restringe navegação, isola o renderer e autentica a comunicação com o motor por uma chave efêmera.
-- **Verificação:** 64 testes Python e 23 testes JavaScript, além de verificações de interface no Edge e auditoria dos arquivos preparados para publicação.
+- **Verificação:** 67 testes Python e 23 testes JavaScript, além de verificações no Edge para acesso, demo offline, troca de destinatário e alterações concorrentes, e auditoria dos arquivos preparados para publicação.
 
 ## Desenvolvimento e testes
 
@@ -140,7 +156,7 @@ Os testes de Graph usam respostas simuladas. Os testes reais de DPAPI rodam no W
 npm run test:ui
 ```
 
-O teste da demonstração também gera a imagem do editor independente. Para reproduzir as outras quatro capturas, com Edge instalado:
+O teste da demonstração também gera a imagem do editor independente. O teste de destinatário usa respostas simuladas da API e não envia emails. Para reproduzir as seis capturas do fluxo conectado, com Edge instalado:
 
 ```sh
 npm run showcase

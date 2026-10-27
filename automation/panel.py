@@ -316,6 +316,32 @@ class Panel:
             self.save()
             return {'approval_id': token, 'revision': item['revision'], 'html': html, 'to': recipient, 'subject': payload['subject'], 'amounts': amount, 'test': item['test']}
 
+    def change_recipient(self, key, fields):
+        """Conserva el contenido revisado y emite una confirmación nueva sin Graph."""
+        with self.lock:
+            item = self.state['items'].get(key)
+            old_token = fields.get('approval_id', '')
+            previous = self.previews.get(old_token)
+            if (self.draining or not item or item['status'] != 'pending' or not previous
+                    or previous['key'] != key or previous['expires'] < time.time()
+                    or previous['revision'] != item['revision']):
+                raise ValueError('La vista previa ha caducado o ha cambiado. Genera otra vista previa.')
+            if item.get('test') or item.get('send_blocked'):
+                raise ValueError('El destinatario de una prueba no se puede modificar.')
+            recipient = str(fields.get('recipient', '')).strip()
+            if len(recipient) > 200 or not re.fullmatch(r'[^\s<>@,;]+@[^\s<>@,;]+\.[^\s<>@,;]+', recipient):
+                raise ValueError('Introduce una dirección de destinatario válida.')
+            record = copy.deepcopy(previous)
+            record['payload']['toRecipients'] = [{'emailAddress': {'address': recipient}}]
+            item.update(recipient=recipient, revision=item['revision'] + 1)
+            record['revision'] = item['revision']
+            self.save()
+            # El token anterior deja de ser válido; no se prolonga su caducidad.
+            self.previews = {token: entry for token, entry in self.previews.items() if entry['key'] != key}
+            token = secrets.token_urlsafe(32)
+            self.previews[token] = record
+            return {'approval_id': token, 'revision': item['revision'], 'to': recipient}
+
     def send_confirmed(self, key, fields):
         if fields.get('confirmed') is not True:
             raise ValueError('Debes confirmar el envío después de revisar la vista previa.')
@@ -462,11 +488,12 @@ def serve(config, root, port=8765, open_browser=False, data_dir=None, desktop_ke
                 elif path == '/api/prepare-shutdown' and desktop_key:
                     result = app.prepare_shutdown()
                 else:
-                    action = re.fullmatch(r'/api/items/([a-f0-9]{64})/(preview|send)', path)
+                    action = re.fullmatch(r'/api/items/([a-f0-9]{64})/(preview|recipient|send)', path)
                     if not action:
                         return self.reply(404, {'error': 'No encontrado.'})
                     key, command = action.groups()
-                    result = app.preview(key, fields) if command == 'preview' else app.send_confirmed(key, fields)
+                    handlers = {'preview': app.preview, 'recipient': app.change_recipient, 'send': app.send_confirmed}
+                    result = handlers[command](key, fields)
                 self.reply(200, result)
             except Exception as error:
                 self.reply(400, {'error': str(error)})

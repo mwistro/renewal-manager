@@ -4,7 +4,7 @@ const desktop=window.renovacionesDesktop;
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = cents => new Intl.NumberFormat('es-ES', {style:'currency',currency:'EUR'}).format(cents / 100);
 const labels = {pending:'Pendiente',review:'Revisar datos',creating:'Preparando envío',sending:'Enviando',submitted:'Envío aceptado',sent:'Enviado',uncertain:'Comprobar envío',send_failed:'Error de envío'};
-let csrf='', state=null, selected=null, filter='pending', preview=null, rendered='', sending=false, polling=false, seen=null, toastTimer;
+let csrf='', state=null, selected=null, filter='pending', preview=null, confirmation=null, rendered='', sending=false, reviewing=false, polling=false, seen=null, toastTimer;
 
 async function api(path, data){
   const response = await fetch(path, {method:data===undefined?'GET':'POST', headers:data===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':csrf}, body:data===undefined?undefined:JSON.stringify(data)});
@@ -70,7 +70,7 @@ function renderDetail(){
   const entry=item();if(!entry)return;
   const signature=entry.key+':'+entry.status;
   if(rendered===signature)return;
-  rendered=signature;preview=null;
+  rendered=signature;preview=null;confirmation=null;if($('confirm-dialog').open)$('confirm-dialog').close();
   const p=entry.proposal;
   const header=`<div class="detail-header"><div><h2>${escapeHtml(p?.customer||'Revisión del correo')}</h2><p>${escapeHtml(p?.product||entry.subject)}</p></div><span class="badge ${escapeHtml(entry.status)}">${escapeHtml(labels[entry.status]||entry.status)}</span></div>`;
   if(entry.status!=='pending'||!p){
@@ -83,41 +83,59 @@ function renderDetail(){
   $('detail').innerHTML=header+`
     ${entry.reception_test?'<p class="notice">Prueba recibida por Outlook. El envío está bloqueado permanentemente.</p>':entry.test?'<p class="notice">Prueba local. El destinatario está fijado a tu propia cuenta; puedes recorrer todo el proceso antes de usarlo con clientes.</p>':''}
     <section class="card"><div class="card-heading"><span class="step">01</span><h3>Revisa los precios</h3><small>INFORMACIÓN INTERNA</small></div><div class="price-grid"><div><span>Coste de renovación · PVD</span><strong>${p.pvd_cents!==undefined?money(p.pvd_cents*multiplier):'—'}</strong></div><div><span>PVP anterior</span><strong>${p.pvp_current_cents!==undefined?money(p.pvp_current_cents*multiplier):'—'}</strong></div><div class="highlight"><span>PVP de renovación</span><strong>${money(p.pvp_cents*multiplier)}</strong></div></div><div class="meta-row"><span>Licencias: <b>${p.quantity}</b></span><span>Renovación: <b>${fmtDate(p.renewal)}</b></span><span>Importes del conjunto</span></div></section>
-    <form id="prepare-form" class="card"><div class="card-heading"><span class="step">02</span><h3>Prepara la propuesta</h3></div><div class="fields"><label>Descuento<select id="discount-kind"><option value="none">Sin descuento</option><option value="percent">Porcentaje (%)</option><option value="amount">Importe total (€)</option></select></label><label id="discount-label">Valor del descuento<input id="discount-value" type="number" min="0" step="0.01" value="${escapeHtml(entry.discount)}" required></label><label class="wide">Destinatario<input id="recipient" type="email" required maxlength="200" value="${escapeHtml(entry.recipient)}" ${entry.test?'readonly':''}></label></div><div class="final-price"><span>Total para el cliente</span><strong id="live-total">${money(entry.amounts.total)}</strong></div><p id="discount-summary" class="discount-note">El coste del proveedor se queda en el panel.</p><button class="button primary prepare-button" id="prepare" type="submit">Generar vista previa →</button></form>
+    <form id="prepare-form" class="card"><div class="card-heading"><span class="step">02</span><h3>Prepara la propuesta</h3></div><div class="fields"><label>Descuento<select id="discount-kind"><option value="none">Sin descuento</option><option value="percent">Porcentaje (%)</option><option value="amount">Importe total (€)</option></select></label><label id="discount-label">Valor del descuento<input id="discount-value" type="number" min="0" step="0.01" value="${escapeHtml(entry.discount)}" required></label><label class="wide">Destinatario<input id="recipient" type="email" required maxlength="200" value="${escapeHtml(entry.recipient)}" ${entry.test?'readonly':''}></label></div><div class="final-price"><span>Total para el cliente</span><strong id="live-total">${money(entry.amounts.total)}</strong></div><p id="discount-summary" class="discount-note">El coste del proveedor se queda en el panel.</p><button class="button primary prepare-button" id="prepare" type="submit" aria-describedby="preview-refresh-hint">Generar vista previa →</button><p id="preview-refresh-hint" class="preview-refresh-hint" role="status" hidden>Has cambiado el descuento. Genera de nuevo la vista previa antes de enviar.</p></form>
     <section class="card preview-card"><div class="preview-label"><strong>03 · Vista previa del correo</strong><span>LO QUE VERÁ EL CLIENTE</span></div><div id="preview-placeholder" class="preview-placeholder">Genera la vista previa para revisar el correo completo<br>con la marca de tu empresa y el precio final.</div><iframe id="email-preview" title="Vista previa del correo para el cliente" sandbox="" hidden></iframe></section><div class="send-area"><p id="send-help">Primero revisa la vista previa. Después podrás confirmar el envío.</p><button class="button primary" id="review-send" disabled>Revisar y enviar ↗</button></div>`;
   $('discount-kind').value=initialKind;
   let formVersion=0;
   function changed(){
     formVersion++;
+    if(preview)$('preview-refresh-hint').hidden=false;
     preview=null;
+    confirmation=null;if($('confirm-dialog').open)$('confirm-dialog').close();
     const kind=$('discount-kind').value;
     $('discount-value').disabled=kind==='none';
     $('discount-value').max=kind==='percent'?'100':String(p.pvp_cents*multiplier/100);
     try{const amount=totalFor(entry,$('discount-value').value,kind);$('live-total').textContent=money(amount.total);$('discount-summary').textContent=amount.discount?'Descuento: '+money(amount.discount)+' sobre '+money(amount.subtotal)+'. El coste del proveedor se queda en el panel.':'Sin descuento. El coste del proveedor se queda en el panel.';}catch{$('live-total').textContent='—';$('discount-summary').textContent='El descuento debe ser válido y no superar el total.';}
     $('email-preview').hidden=true;$('preview-placeholder').hidden=false;updateSendButton();
   }
-  $('discount-kind').addEventListener('change',changed);$('discount-value').addEventListener('input',changed);$('recipient').addEventListener('input',changed);changed();
+  $('discount-kind').addEventListener('change',changed);$('discount-value').addEventListener('input',changed);
+  $('recipient').addEventListener('input',()=>{confirmation=null;if($('confirm-dialog').open)$('confirm-dialog').close();updateSendButton();});changed();
   $('prepare-form').addEventListener('submit',async event=>{
     event.preventDefault();const button=$('prepare');button.disabled=true;
     const key=selected, version=formVersion;
     try{
       const result=await api('/api/items/'+key+'/preview',{discount:$('discount-value').value,kind:$('discount-kind').value,recipient:$('recipient').value});
       if(selected!==key)return;
-      if(formVersion!==version){toast('Los datos han cambiado. Vuelve a generar la vista previa.');return;}
+      if(formVersion!==version){$('preview-refresh-hint').hidden=false;toast('Los datos han cambiado. Vuelve a generar la vista previa.');return;}
       preview=result;$('email-preview').srcdoc=result.html;$('email-preview').hidden=false;$('preview-placeholder').hidden=true;
+      $('preview-refresh-hint').hidden=true;
       $('live-total').textContent=money(result.amounts.total);updateSendButton();await refresh();
     }catch(error){toast(error.message);}finally{if(button.isConnected)button.disabled=false;}
   });
-  $('review-send').addEventListener('click',()=>{
-    if(!preview)return;
+  $('review-send').addEventListener('click',async()=>{
+    if(!preview||reviewing||sending||item()?.send_blocked||!$('recipient').reportValidity())return;
+    const key=selected, current=preview, recipient=$('recipient').value.trim();
+    reviewing=true;updateSendButton();
+    try{
+      if(recipient!==current.to){
+        const result=await api('/api/items/'+key+'/recipient',{approval_id:current.approval_id,recipient});
+        if(selected!==key||preview!==current)return;
+        preview={...current,...result};
+      }
+      if(selected!==key||!preview||$('recipient').value.trim()!==recipient){toast('El destinatario ha cambiado. Revisa de nuevo antes de confirmar.');return;}
+      confirmation={key,approval_id:preview.approval_id,to:preview.to};
     $('confirm-from').textContent=state.account;$('confirm-to').textContent=preview.to;$('confirm-subject').textContent=preview.subject;$('confirm-total').textContent=money(preview.amounts.total);$('confirm-test').hidden=!preview.test;$('confirm-dialog').showModal();
+    }catch(error){toast(error.message);}finally{reviewing=false;updateSendButton();}
   });
   updateSendButton();
 }
 function updateSendButton(){
   if(!$('review-send'))return;
   if(item()?.send_blocked){$('review-send').disabled=true;$('send-help').textContent='Prueba de recepción: el envío está bloqueado, incluso después de finalizar la prueba. Puedes revisar precios, descuento y vista previa.';return;}
-  $('review-send').disabled=!preview||!state.connected||!state.can_send||sending;
+  const recipientValid=$('recipient').checkValidity();
+  $('review-send').disabled=!preview||!recipientValid||!state.connected||!state.can_send||sending||reviewing;
+  if(preview&&!recipientValid){$('send-help').textContent='Introduce una dirección de destinatario válida. La vista previa se conserva.';return;}
+  if(reviewing){$('send-help').textContent='Preparando la confirmación del destinatario…';return;}
   $('send-help').textContent=!preview?'Genera y revisa la vista previa antes de enviar.':!state.connected?'La propuesta está lista para revisar. Conecta Outlook para enviarla.':!state.can_send?'Microsoft no ha concedido el permiso de envío en esta sesión. Pulsa «Reconectar Outlook»; si persiste, consulta al administrador.':'El correo solo se enviará cuando pulses «Confirmar y enviar» en el siguiente paso.';
 }
 async function refresh(){
@@ -148,9 +166,13 @@ $('notify').addEventListener('click',async()=>{if(desktop){try{const enabled=awa
 $('search').addEventListener('input',renderQueue);
 document.querySelectorAll('.nav').forEach(button=>button.addEventListener('click',()=>{filter=button.dataset.filter;document.querySelectorAll('.nav').forEach(el=>el.classList.toggle('active',el===button));renderQueue();}));
 for(const id of ['cancel-x','cancel-send'])$(id).addEventListener('click',()=>$('confirm-dialog').close());
+$('confirm-dialog').addEventListener('close',()=>{confirmation=null;});
 $('confirm-form').addEventListener('submit',async event=>{
-  event.preventDefault();if(sending||!preview)return;sending=true;$('confirm-send').disabled=true;
-  try{await api('/api/items/'+selected+'/send',{approval_id:preview.approval_id,confirmed:true});$('confirm-dialog').close();preview=null;toast('Microsoft ha aceptado la solicitud de envío. El panel comprobará su estado.');}
+  event.preventDefault();if(sending||!preview||!confirmation||!$('confirm-dialog').open)return;
+  const approved=confirmation;
+  if(approved.key!==selected||approved.approval_id!==preview.approval_id||$('recipient').value.trim()!==approved.to){$('confirm-dialog').close();toast('El destinatario o la propuesta han cambiado. Vuelve a revisar el envío.');return;}
+  sending=true;$('confirm-send').disabled=true;
+  try{await api('/api/items/'+approved.key+'/send',{approval_id:approved.approval_id,confirmed:true});$('confirm-dialog').close();preview=null;toast('Microsoft ha aceptado la solicitud de envío. El panel comprobará su estado.');}
   catch(error){$('confirm-dialog').close();toast(error.message);}
   finally{sending=false;$('confirm-send').disabled=false;rendered='';await refresh();}
 });

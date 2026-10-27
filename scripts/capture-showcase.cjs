@@ -19,7 +19,7 @@ const fixture = JSON.parse(execFileSync(process.env.RENOVACIONES_PYTHON || 'pyth
     const context = await browser.newContext({viewport: {width: 1600, height: 1120},
       locale: 'es-ES', timezoneId: 'Europe/Madrid', deviceScaleFactor: 1});
     const errors = [], blocked = [];
-    let connected = false;
+    let connected = false, previewRequests = 0;
     await context.route('**/*', async route => {
       const url = new URL(route.request().url());
       if (url.origin !== 'http://localhost') {blocked.push(url.href); return route.abort();}
@@ -27,8 +27,13 @@ const fixture = JSON.parse(execFileSync(process.env.RENOVACIONES_PYTHON || 'pyth
       if (url.pathname === '/api/state') return route.fulfill({json: {...fixture.state,
         connected, auth: {status: connected ? 'connected' : 'disconnected'}}});
       if (url.pathname === '/api/items/atlas/preview') {
+        previewRequests++;
         assert.deepEqual(route.request().postDataJSON(), {discount: '10', kind: 'percent', recipient: 'atlas@example.com'});
         return route.fulfill({json: fixture.preview});
+      }
+      if (url.pathname === '/api/items/atlas/recipient') {
+        assert.deepEqual(route.request().postDataJSON(), {approval_id: fixture.preview.approval_id, recipient: 'compras.atlas@example.com'});
+        return route.fulfill({json: {approval_id: 'showcase-recipient-only', revision: 2, to: 'compras.atlas@example.com'}});
       }
       if (url.pathname === '/showcase-email') return route.fulfill({contentType: 'text/html', body: fixture.preview.html});
       const asset = {'/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css']}[url.pathname];
@@ -56,6 +61,18 @@ const fixture = JSON.parse(execFileSync(process.env.RENOVACIONES_PYTHON || 'pyth
     await page.locator('#review-send').click();
     await page.locator('#confirm-dialog').screenshot({path: path.join(output, '04-confirmation.png')});
     await page.locator('#cancel-send').click();
+    await page.locator('#recipient').fill('compras.atlas@example.com');
+    assert.equal(await page.locator('#email-preview').isVisible(), true);
+    await page.locator('#review-send').click();
+    await page.locator('#confirm-dialog').waitFor({state: 'visible'});
+    assert.equal(await page.locator('#confirm-to').innerText(), 'compras.atlas@example.com');
+    assert.equal(previewRequests, 1);
+    await page.locator('#confirm-dialog').screenshot({path: path.join(output, '05-recipient-change.png')});
+    await page.locator('#cancel-send').click();
+    await page.locator('#discount-value').fill('15');
+    assert.equal(await page.locator('#preview-refresh-hint').isVisible(), true);
+    assert.equal(await page.locator('#review-send').isDisabled(), true);
+    await page.locator('#prepare-form').screenshot({path: path.join(output, '06-preview-refresh.png')});
     const emailPage = await context.newPage();
     await emailPage.setViewportSize({width: 820, height: 1000});
     await emailPage.goto('http://localhost/showcase-email');
@@ -63,7 +80,7 @@ const fixture = JSON.parse(execFileSync(process.env.RENOVACIONES_PYTHON || 'pyth
     await emailPage.screenshot({path: path.join(output, '03-email-preview.png'), fullPage: true});
     assert.deepEqual(errors, []);
     assert.deepEqual(blocked, []);
-    console.log('Showcase captured: login, dashboard, real email template and confirmation. Synthetic data only; no external requests or sending.');
+    console.log('Showcase captured: login, dashboard, real email template, confirmation, recipient change and preview refresh. Synthetic data only; no external requests or sending.');
   } finally {
     await browser.close();
   }

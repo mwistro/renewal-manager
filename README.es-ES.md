@@ -25,6 +25,7 @@ Renewal Manager organiza estas etapas en una lista de revisión. La automatizaci
 | Recibir | Identifica los avisos de los remitentes configurados y evita duplicados. |
 | Revisar | Muestra el coste interno, el precio anterior, el precio de renovación y los datos del cliente. |
 | Preparar | Calcula el descuento y genera una propuesta sin exponer el coste del proveedor. |
+| Ajustar destinatario | Cambia la dirección de una propuesta pendiente conservando el contenido revisado. |
 | Confirmar | Muestra el remitente, el destinatario, el asunto y el total antes de permitir el envío. |
 
 ## Showcase
@@ -43,11 +44,25 @@ La vista previa se genera con el mismo código Python que prepara las propuestas
 
 ### 03 · Revisión antes del envío
 
-La confirmación final permite comprobar los datos de la operación. Si se modifican los campos, la vista previa deja de ser válida y es necesario volver a revisarla.
+La confirmación final permite comprobar los datos de la operación. Cambiar el descuento invalida la vista previa; cambiar solo el destinatario conserva el contenido revisado y exige una nueva confirmación con la dirección actualizada.
 
 <p align="center">
   <img src="docs/screenshots/04-confirmation.png" alt="Diálogo de confirmación con remitente y destinatario ficticios, asunto y total" width="560">
 </p>
+
+### 04 · Cambia el destinatario sin rehacer la propuesta
+
+La versión **1.1.0** incorpora las mejoras más recientes del flujo de revisión a la edición de portafolio. Tras revisar una propuesta, el usuario puede corregir el destinatario y pulsar **Revisar y enviar**. La confirmación muestra la nueva dirección y conserva el contenido del correo y el importe revisado.
+
+<p align="center">
+  <img src="docs/screenshots/05-recipient-change.png" alt="Nueva confirmación con el destinatario actualizado y el mismo total revisado de 1.620,00 euros" width="560">
+</p>
+
+Las direcciones no válidas bloquean el envío sin descartar la vista previa. Si cambia el descuento, un aviso visible pide generar de nuevo la vista previa antes de enviar:
+
+![Cambio de descuento con aviso para regenerar la vista previa](docs/screenshots/06-preview-refresh.png)
+
+El backend emite un nuevo token de aprobación al cambiar el destinatario, revoca el anterior y conserva la caducidad original. Los destinatarios de prueba permanecen bloqueados. Un cambio durante la confirmación cierra el diálogo o impide abrirlo, evitando aprobar una dirección desactualizada sin advertirlo.
 
 <details>
 <summary><strong>Ver la pantalla de acceso y la demostración independiente</strong></summary>
@@ -82,6 +97,7 @@ La demostración no se conecta a Outlook, no envía mensajes y conserva los dato
 - Extracción de datos de correos HTML, con revisión cuando faltan campos o son ambiguos. El parser admite el formato de ejemplo de `tests/fixtures`; no es un parser universal para cualquier proveedor.
 - Separación entre el coste interno y la propuesta que se presenta al cliente.
 - Integración opcional con Microsoft Graph para leer correos, crear borradores y enviar tras la revisión y la confirmación.
+- Corregir el destinatario conserva el correo revisado; cambiar el descuento exige otra vista previa. La confirmación queda vinculada al destinatario y a la revisión actuales de la propuesta.
 - Historial local, eliminación de duplicados, recuperación tras interrupciones y gestión de envíos con resultado incierto, sin repetición automática.
 - Sesión cifrada con Windows DPAPI, vinculada al usuario local.
 - Aplicación Electron con aislamiento de contexto, sandbox, clave efímera entre procesos, notificaciones y funcionamiento en la bandeja del sistema.
@@ -122,7 +138,7 @@ El editor de `dist/` es una demostración independiente: funciona en el navegado
 - **Envíos inciertos:** una operación cuyo resultado no se ha confirmado no se repite automáticamente.
 - **Separación de datos:** el coste y los campos internos del aviso no se incluyen en la propuesta enviada al cliente.
 - **Límite entre procesos:** Electron restringe la navegación, aísla el renderer y autentica la comunicación con el motor mediante una clave efímera.
-- **Verificación:** 64 pruebas Python y 23 pruebas JavaScript, además de comprobaciones de interfaz en Edge y una auditoría de los archivos preparados para su publicación.
+- **Verificación:** 67 pruebas Python y 23 pruebas JavaScript, además de comprobaciones en Edge del acceso, la demo offline, el cambio de destinatario y las modificaciones concurrentes, y una auditoría de los archivos preparados para su publicación.
 
 ## Desarrollo y pruebas
 
@@ -140,7 +156,7 @@ Las pruebas de Graph utilizan respuestas simuladas. Las pruebas reales de DPAPI 
 npm run test:ui
 ```
 
-La prueba de la demostración también genera la captura del editor independiente. Para reproducir las otras cuatro capturas, con Edge instalado:
+La prueba de la demostración también genera la captura del editor independiente. La prueba de destinatario utiliza respuestas simuladas de la API y no envía correos. Para reproducir las seis capturas del flujo conectado, con Edge instalado:
 
 ```sh
 npm run showcase
